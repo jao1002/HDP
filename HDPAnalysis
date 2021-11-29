@@ -1,0 +1,150 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Nov 23 10:28:20 2021
+This code analyzes CMAP data to study vernal window. 
+@author: juliaolson
+"""
+#%%Import libraries
+import pandas as pd
+from datetime import datetime
+from pprint import pprint
+import numpy as np                   
+from matplotlib import pyplot as plt 
+#%%Import files
+fileTL =  'LampreyRiver_tasmax_rcp45_1980-2099_daily.csv'   # Lamprey temp file
+fileTP = 'PemigewassetRiver_tasmax_rcp45_1980-2099_daily.csv' #Pemi temp file
+fileSPL = 'LampreyRiver_snowPack_rcp45_1980-2099_daily.csv' #lamprey snowpack file
+fileSPP = 'PemigewassetRiver_snowPack_rcp45_1980-2099_daily.csv' #pemi snowpack file
+fileSMLacc = 'LampreyRiver_soilMoist_ACCESS1-3_rcp45_1980-2099_timeseries.csv' #lamprey soil moisture/ACCESS1-3
+fileSMLhad = 'LampreyRiver_soilMoist_HadGEM2-ES_rcp45_1980-2099_timeseries.csv' #lamprey soil moisture/HADGEM2-ES
+fileSMLnor =  'LampreyRiver_soilMoist_NorESM1-M_rcp45_1980-2099_timeseries.csv' #lamprey soil moisture/NorESM1-M
+fileSMLinm = 'LampreyRiver_soilMoist_inmcm4_rcp45_1980-2099_timeseries.csv' #lamprey soil moisture/inmcm4
+fileSMLmir = 'LampreyRiver_soilMoist_MIROC-ESM_rcp45_1980-2099_timeseries.csv' #lamprey soil moisture/MIROC_ESM
+fileQLacc = 'LampreyRiver_discharge_ACCESS1-3_rcp45_1980-2099_timeseries.csv' #lamprey discharge/ACCESS1-3
+fileQLhad = 'LampreyRiver_discharge_HadGEM2-ES_rcp45_1980-2099_timeseries.csv' #lamprey discharge/HADGEM2-ES
+fileQLnor = 'LampreyRiver_discharge_NorESM1-M_rcp45_1980-2099_timeseries.csv' #lamprey discharge/NorESM1-M
+fileQLinm = 'LampreyRiver_discharge_inmcm4_rcp45_1980-2099_timeseries.csv' #lamprey discharge/inmcm4
+fileQLmir = 'LampreyRiver_discharge_MIROC-ESM_rcp45_1980-2099_timeseries.csv' #lamprey discharge/MIROC_ESM
+fileSMPacc = 'LampreyRiver_soilMoist_NorESM1-M_rcp45_1980-2099_timeseries.csv' #pemi soil moisture/ACCESS1-3
+fileSMPhad = 'PemigewassetRiver_soilMoist_HadGEM2-ES_rcp45_1980-2099_timeseries.csv' #pemi soil moisture/HADGEM2-ES
+fileSMPnor = 'PemigewassetRiver_soilMoist_NorESM1-M_rcp45_1980-2099_timeseries.csv'  #pemi soil moisture/NorESM1-M
+fileSMPinm = 'PemigewassetRiver_soilMoist_inmcm4_rcp45_1980-2099_timeseries.csv' #pemi soil moisture/inmcm4
+fileSMPmir = 'PemigewassetRiver_soilMoist_MIROC-ESM_rcp45_1980-2099_timeseries.csv' #pemi soil moisture/MIROC_ESM
+fileQPacc = 'PemigewassetRiver_discharge_ACCESS1-3_rcp45_1980-2099_timeseries.csv' #pemi discharge/ACCESS1-3
+fileQPhad = 'PemigewassetRiver_discharge_HadGEM2-ES_rcp45_1980-2099_timeseries.csv' #pemi discharge/HADGEM2-ES
+fileQPnor = 'PemigewassetRiver_discharge_NorESM1-M_rcp45_1980-2099_timeseries.csv' #pemi discharge/NorESM1-M
+fileQPinm = 'PemigewassetRiver_discharge_inmcm4_rcp45_1980-2099_timeseries.csv' #pemi discharge/inmcm4
+fileQPmir = 'PemigewassetRiver_discharge_MIROC-ESM_rcp45_1980-2099_timeseries.csv' #pemi discharge/MIROC_ESM
+#Constants
+freeze=0
+nosnow=.1 
+#%% Load data 
+#Lamprey temp
+dftl = pd.read_csv(fileTL, delimiter=",", comment='#', header=0,
+                 parse_dates= {"date" : ["Year","Month","Day"]}, index_col='date')
+dftl = dftl[['ACCESS1-3', 'HadGEM2-ES', 'NorESM1-M', 'inmcm4', 'MIROC-ESM']]
+dftl.index = pd.to_datetime(dftl.index)
+#Pemi temp
+dftp = pd.read_csv(fileTP, delimiter=",", comment='#', header=0,
+                 parse_dates= {"date" : ["Year","Month","Day"]}, index_col='date')
+dftp = dftp[['ACCESS1-3', 'HadGEM2-ES', 'NorESM1-M', 'inmcm4', 'MIROC-ESM']]
+dftp.index = pd.to_datetime(dftp.index)
+#Lamprey snowpack
+dfspl = pd.read_csv(fileSPL, delimiter=",", comment='#', header=0,
+                 parse_dates= {"date" : ["Year","Month","Day"]}, index_col='date')
+dfspl = dfspl[['ACCESS1-3', 'HadGEM2-ES', 'NorESM1-M', 'inmcm4', 'MIROC-ESM']]
+dfspl.index = pd.to_datetime(dfspl.index)
+#Pemi snowpack
+dfspp = pd.read_csv(fileSPP, delimiter=",", comment='#', header=0,
+                 parse_dates= {"date" : ["Year","Month","Day"]}, index_col='date')
+dfspp = dfspp[['ACCESS1-3', 'HadGEM2-ES', 'NorESM1-M', 'inmcm4', 'MIROC-ESM']]
+dfspp.index = pd.to_datetime(dfspp.index)
+#Lamprey soil moisture
+dfsmlacc = pd.read_csv(fileSMLacc, delimiter=",", comment='#', header=0,
+                 parse_dates= {"date" : ["Year","Month","Day"]}, index_col='date')
+dfsmlhad = pd.read_csv(fileSMLhad, delimiter=",", comment='#', header=0,
+                 parse_dates= {"date" : ["Year","Month","Day"]}, index_col='date')
+dfsmlnor = pd.read_csv(fileSMLnor, delimiter=",", comment='#', header=0,
+                 parse_dates= {"date" : ["Year","Month","Day"]}, index_col='date')
+dfsmlinm = pd.read_csv(fileSMLinm, delimiter=",", comment='#', header=0,
+                 parse_dates= {"date" : ["Year","Month","Day"]}, index_col='date')
+dfsmlmir = pd.read_csv(fileSMLmir, delimiter=",", comment='#', header=0,
+                 parse_dates= {"date" : ["Year","Month","Day"]}, index_col='date')
+dfsoill = pd.concat([dfsmlacc, dfsmlhad, dfsmlnor, dfsmlinm, dfsmlmir], axis=1)
+dfsoill.index = pd.to_datetime(dfsoill.index)
+#Pemi soil moisture
+dfsmpacc = pd.read_csv(fileSMPacc, delimiter=",", comment='#', header=0,
+                 parse_dates= {"date" : ["Year","Month","Day"]}, index_col='date')
+dfsmphad = pd.read_csv(fileSMPhad, delimiter=",", comment='#', header=0,
+                 parse_dates= {"date" : ["Year","Month","Day"]}, index_col='date')
+dfsmpnor = pd.read_csv(fileSMPnor, delimiter=",", comment='#', header=0,
+                 parse_dates= {"date" : ["Year","Month","Day"]}, index_col='date')
+dfsmpinm = pd.read_csv(fileSMPinm, delimiter=",", comment='#', header=0,
+                 parse_dates= {"date" : ["Year","Month","Day"]}, index_col='date')
+dfsmpmir = pd.read_csv(fileSMPmir, delimiter=",", comment='#', header=0,
+                 parse_dates= {"date" : ["Year","Month","Day"]}, index_col='date')
+dfsoilp = pd.concat([dfsmpacc, dfsmphad, dfsmpnor, dfsmpinm, dfsmpmir], axis=1)
+dfsoilp.index = pd.to_datetime(dfsoilp.index)
+#Lamprey discharge
+dfqlacc = pd.read_csv(fileQLacc, delimiter=",", comment='#', header=0,
+                 parse_dates= {"date" : ["Year","Month","Day"]}, index_col='date')
+dfqlhad = pd.read_csv(fileQLhad, delimiter=",", comment='#', header=0,
+                 parse_dates= {"date" : ["Year","Month","Day"]}, index_col='date')
+dfqlnor = pd.read_csv(fileQLnor, delimiter=",", comment='#', header=0,
+                 parse_dates= {"date" : ["Year","Month","Day"]}, index_col='date')
+dfqlinm = pd.read_csv(fileQLinm, delimiter=",", comment='#', header=0,
+                 parse_dates= {"date" : ["Year","Month","Day"]}, index_col='date')
+dfqlmir = pd.read_csv(fileQLmir, delimiter=",", comment='#', header=0,
+                 parse_dates= {"date" : ["Year","Month","Day"]}, index_col='date')
+dfql = pd.concat([dfqlacc, dfqlhad, dfqlnor, dfqlinm, dfqlmir], axis=1)
+dfql.index = pd.to_datetime(dfql.index)
+#Pemi discharge
+dfqpacc = pd.read_csv(fileQPacc, delimiter=",", comment='#', header=0,
+                 parse_dates= {"date" : ["Year","Month","Day"]}, index_col='date')
+dfqphad = pd.read_csv(fileQPhad, delimiter=",", comment='#', header=0,
+                 parse_dates= {"date" : ["Year","Month","Day"]}, index_col='date')
+dfqpnor = pd.read_csv(fileQPnor, delimiter=",", comment='#', header=0,
+                 parse_dates= {"date" : ["Year","Month","Day"]}, index_col='date')
+dfqpinm = pd.read_csv(fileQPinm, delimiter=",", comment='#', header=0,
+                 parse_dates= {"date" : ["Year","Month","Day"]}, index_col='date')
+dfqpmir = pd.read_csv(fileQPmir, delimiter=",", comment='#', header=0,
+                 parse_dates= {"date" : ["Year","Month","Day"]}, index_col='date')
+dfqp = pd.concat([dfqpacc, dfqphad, dfqpnor, dfqpinm, dfqpmir], axis=1)
+dfqp.index = pd.to_datetime(dfqp.index)
+#%% Determining winter severity for each model at both locations 
+#Lamprey snow depth
+dfspl.loc['1980-11-1':'1981-5-31', 'ACCESS1-3'].max() #max snow depth
+dfspl.loc['1980-11-1':'1981-5-31', 'ACCESS1-3'].idxmax().strftime('%j') #juliandate of max snow depth
+dfspl.loc['1980-11-1':'1981-5-31', 'HadGEM2-ES'].max() #max snow depth
+dfspl.loc['1980-11-1':'1981-5-31', 'HadGEM2-ES'].idxmax().strftime('%j') #juliandate of max snow depth
+dfspl.loc['1980-11-1':'1981-5-31', 'NorESM1-M'].max() #max snow depth
+dfspl.loc['1980-11-1':'1981-5-31', 'NorESM1-M'].idxmax().strftime('%j') #juliandate of max snow depth
+dfspl.loc['1980-11-1':'1981-5-31', 'inmcm4'].max() #max snow depth
+dfspl.loc['1980-11-1':'1981-5-31', 'inmcm4'].idxmax().strftime('%j') #juliandate of max snow depth
+dfspl.loc['1980-11-1':'1981-5-31', 'MIROC-ESM'].max() #max snow depth
+dfspl.loc['1980-11-1':'1981-5-31', 'MIROC-ESM'].idxmax().strftime('%j') #juliandate of max snow depth
+#Pemi snow depth
+dfspp.loc['1980-11-1':'1981-5-31', 'ACCESS1-3'].max() #max snow depth
+dfspp.loc['1980-11-1':'1981-5-31', 'ACCESS1-3'].idxmax().strftime('%j') #juliandate of max snow depth
+dfspp.loc['1980-11-1':'1981-5-31', 'HadGEM2-ES'].max() #max snow depth
+dfspp.loc['1980-11-1':'1981-5-31', 'HadGEM2-ES'].idxmax().strftime('%j') #juliandate of max snow depth
+dfspp.loc['1980-11-1':'1981-5-31', 'NorESM1-M'].max() #max snow depth
+dfspp.loc['1980-11-1':'1981-5-31', 'NorESM1-M'].idxmax().strftime('%j') #juliandate of max snow depth
+dfspp.loc['1980-11-1':'1981-5-31', 'inmcm4'].max() #max snow depth
+dfspp.loc['1980-11-1':'1981-5-31', 'inmcm4'].idxmax().strftime('%j') #juliandate of max snow depth
+dfspp.loc['1980-11-1':'1981-5-31', 'MIROC-ESM'].max() #max snow depth
+dfspp.loc['1980-11-1':'1981-5-31', 'MIROC-ESM'].idxmax().strftime('%j') #juliandate of max snow depth
+#Lamprey freezing degree days 
+sum(dftl.loc['1980-11-1':'1981-5-31','ACCESS1-3']<=freeze)
+sum(dftl.loc['1980-11-1':'1981-5-31','HadGEM2-ES']<=freeze)
+sum(dftl.loc['1980-11-1':'1981-5-31','NorESM1-M']<=freeze)
+sum(dftl.loc['1980-11-1':'1981-5-31','inmcm4']<=freeze)
+sum(dftl.loc['1980-11-1':'1981-5-31','MIROC-ESM']<=freeze)
+#Pemi freezing degree days 
+sum(dftp.loc['1980-11-1':'1981-5-31','ACCESS1-3']<=freeze)
+sum(dftp.loc['1980-11-1':'1981-5-31','HadGEM2-ES']<=freeze)
+sum(dftp.loc['1980-11-1':'1981-5-31','NorESM1-M']<=freeze)
+sum(dftp.loc['1980-11-1':'1981-5-31','inmcm4']<=freeze)
+sum(dftp.loc['1980-11-1':'1981-5-31','MIROC-ESM']<=freeze)
+#%%Determining first transition dates 
